@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import numpy as np
 import scipy as sp
 import pandas as pd
@@ -90,19 +87,6 @@ def cash_flow_raw(income_data, financial_data, n_days):
     combi = np.round(([1] + financial_data['exchange rates']) @ raw_balance, 2)
     return (b, combi)
 
-def trim(income_data, financial_data):
-    n_currency = min(1 + len(financial_data['exchange rates']), len(financial_data['deposit options']), 
-                     len(financial_data['names']), len(income_data[0]), len(income_data[1]))
-    financial_data['exchange rates'] = financial_data['exchange rates'][:n_currency - 1]
-    financial_data['deposit options'] = financial_data['deposit options'][:n_currency]
-    financial_data['names'] = financial_data['names'][:n_currency]
-    income_data = income_data[:, :n_currency, ...]
-    # financial_data['n_currency'] = n_currency
-    max_days = (financial_data['last date'] - financial_data['first date']).days + 1
-    income_data = np.pad(income_data, ((0,0),(0,0),(0, max(0, max_days - len(income_data[0,0])))))[:, :, :max_days]
-        
-    return (income_data, financial_data)
-
 def input_visualise(income_data, financial_data):
     names = financial_data['names']
     n_currency = len(financial_data['names'])
@@ -166,26 +150,3 @@ def optimiser(income_data, financial_data):
     ops = [np.pad(l, (0, lengths[-1] - len(l))) for l in ops_split]
 
     return (ops_cum, actual_transaction_days, ops, intr_earned)
-
-
-def instalment(total_price, down_payment, duration, annual_intr_rate, first_instalment_date, aggressive=True):
-    p = total_price - down_payment
-    n = duration * 12
-    r = annual_intr_rate / 12
-    date_list = [first_instalment_date + relativedelta(months=i) for i in range(n)]
-    if aggressive:
-        instalments = [p / n +(p - p * k / n) * r for k in range(n)]
-    else:
-        instalments = [(p * r * (1 + r) ** n) / ((1+r)**n - 1)] * n
-    result = list(zip(date_list, instalments))
-    return result
-
-def index_days(list_of_pairs, start_day, finish_day):
-    list_of_pairs = [p for p in list_of_pairs if p[0] >= start_day and p[0] <= finish_day]
-    result = []
-    for d, val in list_of_pairs:
-        ind = (d - start_day).days
-        result += [0] * (ind - len(result)) + [val]
-    result += [0] * (finish_day - list_of_pairs[-1][0]).days
-    return np.array(result)
-
