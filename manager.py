@@ -84,7 +84,21 @@ def cash_flow_raw(income_data, financial_data, n_days):
     raw_balance = income_cum - expenses_cum
     # print(raw_balance.shape)
     b = np.concatenate(raw_balance)
-    combi = np.round(([1] + financial_data['exchange rates']) @ raw_balance, 2)
+
+    # combi1 = np.round(([1] + financial_data['exchange rates']) @ raw_balance, 2)
+    
+    trans_days = [d for d in financial_data['transaction days'] if d < n_days]
+    # print(trans_days[-1], len(raw_balance[0]))
+    combi = raw_balance[0]
+    for c, r in zip(raw_balance[1:], financial_data['exchange rates']):
+        for i, j in zip(trans_days, trans_days[1:]):
+            c[i:j] = c[i]
+        combi += c * r
+    
+    # plt.plot(combi1)
+    # plt.plot(combi)
+    # plt.show()
+    
     return (b, combi)
 
 def input_visualise(income_data, financial_data):
@@ -104,6 +118,7 @@ def input_visualise(income_data, financial_data):
 def optimiser(income_data, financial_data):
     max_days = (financial_data['last date'] - financial_data['first date']).days + 1
     transaction_days = financial_data['transaction days']
+    # print(transaction_days[:5])
 
     # begin LP procedures
     optimised_day = 0
@@ -115,10 +130,6 @@ def optimiser(income_data, financial_data):
         target_day = np.argmax(combi < 0)
     
     while optimised_day < max_days:
-        if target_day == 0:
-            print('Error')
-            break
-    
         A, obj, lengths = transaction_matrix(financial_data, target_day)
         b, _ = cash_flow_raw(income_data, financial_data, target_day)
         # plt.imshow(A)
@@ -137,16 +148,18 @@ def optimiser(income_data, financial_data):
         elif np.argmax(combi + intr_earned < 0) > target_day:
             target_day = np.argmax(combi + intr_earned < 0)
         else:
+            success = True
             break
     # print('total interests:', intr_earned)
     
     # process output
-    ops_cum = np.reshape(A @ result.x, (-1, optimised_day))
-    actual_transaction_days = [financial_data['first date'] + relativedelta(days=i) for i in transaction_days[:lengths[-1]]]
-    split_points = np.cumsum(lengths)[:-1]
-
-    ops = np.round(result.x, decimals=2)
-    ops_split = np.hsplit(ops, split_points)
-    ops = [np.pad(l, (0, lengths[-1] - len(l))) for l in ops_split]
+    if success:
+        ops_cum = np.reshape(A @ result.x, (-1, optimised_day))
+        actual_transaction_days = [financial_data['first date'] + relativedelta(days=i) for i in transaction_days[:lengths[-1]]]
+        split_points = np.cumsum(lengths)[:-1]
+    
+        ops = np.round(result.x, decimals=2)
+        ops_split = np.hsplit(ops, split_points)
+        ops = [np.pad(l, (0, lengths[-1] - len(l))) for l in ops_split]
 
     return (ops_cum, actual_transaction_days, ops, intr_earned)
