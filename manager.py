@@ -135,12 +135,12 @@ def optimiser(income_data, financial_data):
         # plt.imshow(A)
         # plt.colorbar()
         # plt.show()
-        print('running LP, targeting day', target_day)
+        # print('running LP, targeting day', target_day)
         # print(*combi[target_day - 3:target_day + 3])
         result = sp.optimize.linprog(-obj, A_ub=-A, b_ub=b, method='highs')
         # print(result)
         intr_earned = -result.fun
-        print(combi[target_day-1], combi[target_day-1] + intr_earned)
+        # print(combi[target_day-1], combi[target_day-1] + intr_earned)
         
         optimised_day = target_day
         if combi[-1] + intr_earned > 0:
