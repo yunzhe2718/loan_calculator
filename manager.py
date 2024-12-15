@@ -148,18 +148,16 @@ def optimiser(income_data, financial_data):
         elif np.argmax(combi + intr_earned < 0) > target_day:
             target_day = np.argmax(combi + intr_earned < 0)
         else:
-            success = True
             break
     # print('total interests:', intr_earned)
     
     # process output
-    if success:
-        ops_cum = np.reshape(A @ result.x, (-1, optimised_day))
-        actual_transaction_days = [financial_data['first date'] + relativedelta(days=i) for i in transaction_days[:lengths[-1]]]
-        split_points = np.cumsum(lengths)[:-1]
-    
-        ops = np.round(result.x, decimals=2)
-        ops_split = np.hsplit(ops, split_points)
-        ops = [np.pad(l, (0, lengths[-1] - len(l))) for l in ops_split]
+    ops_cum = np.reshape(A @ result.x, (-1, optimised_day))
+    actual_transaction_days = [financial_data['first date'] + relativedelta(days=i) for i in transaction_days[:lengths[-1]]]
+    split_points = np.cumsum(lengths)[:-1]
+
+    ops = np.round(result.x, decimals=2)
+    ops_split = np.hsplit(ops, split_points)
+    ops = [np.pad(l, (0, lengths[-1] - len(l))) for l in ops_split]
 
     return (ops_cum, actual_transaction_days, ops, intr_earned)
